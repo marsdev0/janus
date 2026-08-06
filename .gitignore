@@ -35,3 +35,6 @@ build/
 .mvn/
 mvnw
 mvnw.cmd
+.docker/
+.sql/
+.env
