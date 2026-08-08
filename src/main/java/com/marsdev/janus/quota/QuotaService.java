@@ -1,5 +1,6 @@
 package com.marsdev.janus.quota;
 
+import com.marsdev.janus.common.utils.ScriptUtil;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,16 +33,9 @@ public class QuotaService {
 
     @PostConstruct
     public void init() {
-        preConsumeScript = load("lua/quota_pre_consume.lua");
-        adjustScript = load("lua/quota_adjust.lua");
+        preConsumeScript = ScriptUtil.load("lua/quota_pre_consume.lua");
+        adjustScript = ScriptUtil.load("lua/quota_adjust.lua");
 
-    }
-
-    private DefaultRedisScript<Long> load(String path) {
-        DefaultRedisScript<Long> s = new DefaultRedisScript<>();
-        s.setScriptSource(new ResourceScriptSource(new ClassPathResource(path)));
-        s.setResultType(Long.class);
-        return s;
     }
 
     /**

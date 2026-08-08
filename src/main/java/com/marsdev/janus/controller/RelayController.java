@@ -7,6 +7,7 @@ import com.marsdev.janus.common.JanusException;
 import com.marsdev.janus.filter.AuthFilter;
 import com.marsdev.janus.filter.MeteringFilter;
 import com.marsdev.janus.filter.QuotaPreCheckFilter;
+import com.marsdev.janus.filter.RateLimitFilter;
 import com.marsdev.janus.model.RequestContext;
 import com.marsdev.janus.model.TokenAuth;
 import com.marsdev.janus.reply.UpstreamProxy;
@@ -42,12 +43,15 @@ public class RelayController {
     private final QuotaPreCheckFilter quotaPreCheckFilter;
     private final MeteringFilter meteringFilter;
     private final UsageParser usageParser;
+    private final RateLimitFilter rateLimitFilter;
+
 
     @PostMapping(value = "/chat/completions", produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<String> chat(@RequestBody String body,
                              @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String auth) {
         return createContext(body)
                 .flatMap(ctx -> authFilter.authenticate(auth).map(a -> createAuth(ctx, a)))
+                .flatMap(rateLimitFilter::check)
                 .flatMap(quotaPreCheckFilter::preCheck)
                 .flatMap(ctx ->
                         upstreamProxy.relayNonStream(ctx.getRawBody(), ctx.getModel())
@@ -61,6 +65,7 @@ public class RelayController {
                                                     @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String auth) {
         return createContext(body)
                 .flatMap(ctx -> authFilter.authenticate(auth).map(a -> createAuth(ctx, a)))
+                .flatMap(rateLimitFilter::check)
                 .flatMap(quotaPreCheckFilter::preCheck)
                 .flatMapMany(upstreamProxy::relayStreamWithMetering);
     }

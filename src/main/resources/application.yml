@@ -33,3 +33,8 @@ janus:
     reconcile-threshold: 100
     model-completion-cap:
       default: 2048
+  ratelimit:
+    window-seconds: 60
+    token-limit: 100
+    model-limit: 50
+    channel-limit: 200
