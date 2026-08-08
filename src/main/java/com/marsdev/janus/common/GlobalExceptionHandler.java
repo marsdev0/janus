@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2026 marsdev0
+ *
+ * Licensed under the MIT License.
+ * See the LICENSE file in the project root for full license information.
+ */
+
 package com.marsdev.janus.common;
 
 import com.marsdev.janus.common.response.ApiResult;
