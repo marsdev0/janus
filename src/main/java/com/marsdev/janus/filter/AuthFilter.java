@@ -52,12 +52,13 @@ public class AuthFilter {
         // jdbc是阻塞的，需要用fromCallable wrap一下
         return Mono.fromCallable(() -> tokenMapper.findByKeyHash(keyHash))
                 .subscribeOn(Schedulers.boundedElastic())
+                .switchIfEmpty(Mono.defer(() -> {
+                    // 如果findByKeyHash返回的是null，则Mono.fromCallable发送的是空的Mono，不是带null的Mono
+                    // 防穿透:缓存空标记短 TTL,挡随机 key 轰炸回源 DB
+                    return redisTemplate.opsForValue().set(cacheKey, NULl_VALUE, NULL_TTL)
+                            .then(Mono.error(new JanusException(ErrorCode.UNAUTHORIZED)));
+                }))
                 .flatMap(t -> {
-                    if (t == null) {
-                        // 防穿透:缓存空标记短 TTL,挡随机 key 轰炸回源 DB
-                        return redisTemplate.opsForValue().set(cacheKey, NULl_VALUE, NULL_TTL)
-                                .then(Mono.error(new JanusException(ErrorCode.UNAUTHORIZED)));
-                    }
                     TokenAuth tokenAuth = new TokenAuth(t.getId(), t.getModels(), t.getStatus(), t.getExpiresAt());
                     // fire-and-forget 回写:不 join 主流,缓存故障不影响鉴权(下次 miss 再回源)
                     redisTemplate.opsForValue().set(cacheKey, serialize(tokenAuth), CACHE_TTL)

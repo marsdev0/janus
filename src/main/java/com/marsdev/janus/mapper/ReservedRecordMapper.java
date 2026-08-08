@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.marsdev.janus.entity.ReservedRecord;
 import org.springframework.util.CollectionUtils;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -36,7 +37,8 @@ public interface ReservedRecordMapper extends BaseMapper<ReservedRecord> {
         LambdaUpdateWrapper<ReservedRecord> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(ReservedRecord::getRequestId, requestId)
                 .eq(ReservedRecord::getStatus, PENDING)
-                .set(ReservedRecord::getStatus, SETTLED);
+                .set(ReservedRecord::getStatus, SETTLED)
+                .set(ReservedRecord::getSettledAt, LocalDateTime.now());
         return update(updateWrapper);
     }
 
@@ -74,7 +76,8 @@ public interface ReservedRecordMapper extends BaseMapper<ReservedRecord> {
         LambdaUpdateWrapper<ReservedRecord> wrapper = new LambdaUpdateWrapper<>();
         wrapper.eq(ReservedRecord::getStatus, PENDING)
                 .eq(ReservedRecord::getRequestId, requestId)
-                .set(ReservedRecord::getStatus, TIMEOUT_REFUNDED);
+                .set(ReservedRecord::getStatus, TIMEOUT_REFUNDED)
+                .set(ReservedRecord::getSettledAt, LocalDateTime.now());
         return update(wrapper);
     }
 }

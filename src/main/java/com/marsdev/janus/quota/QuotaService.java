@@ -61,7 +61,7 @@ public class QuotaService {
                         log.warn("quota not initialized, tokenId={} (expect warmup)", tokenId);
                         return false;
                     }
-                    return r >= 0;
+                    return r != INSUFFICIENT;
                 });
     }
 
