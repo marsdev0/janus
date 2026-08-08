@@ -38,4 +38,3 @@ mvnw.cmd
 .docker/
 .sql/
 .env
-.scripts/
