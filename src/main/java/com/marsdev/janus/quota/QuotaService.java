@@ -39,7 +39,7 @@ public class QuotaService {
     }
 
     /**
-     * 预扣；true=放行。NOT_INIT 直接 fail-closed（靠 warmup 预热，见 QuotaBootstrap）
+     * Reservation (pre-deduction); true = allowed. NOT_INIT fails closed (warmed up by QuotaBootstrap)
      */
     public Mono<Boolean> preConsume(Long tokenId, long reserved) {
         if (tokenId == null) {
@@ -60,13 +60,13 @@ public class QuotaService {
     }
 
     /**
-     * 对称调整：delta>0 退还，delta<0 补扣
+     * Symmetric adjustment: delta > 0 refunds, delta < 0 charges the difference
      */
     public Mono<Long> adjust(Long tokenId, long delta) {
         return redisTemplate.execute(adjustScript,
                         List.of(quotaKey(tokenId)),
                         String.valueOf(delta))
-                .next();  // 只取第一个元素
+                .next();  // take the first element only
     }
 
 

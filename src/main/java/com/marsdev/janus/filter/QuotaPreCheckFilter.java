@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 /**
- * 预扣服务
+ * Reservation (pre-deduction) service
  *
  * @author geyan
  * @date 2026/8/7
@@ -29,11 +29,11 @@ public class QuotaPreCheckFilter {
 
 
     public Mono<RequestContext> preCheck(RequestContext ctx) {
-        // model上下文token的预扣上限
+        // Reservation cap for the model's context tokens
         long cap = properties.completionCap(ctx.getModel());
         long completionReserved = ctx.getMaxTokens() != null ? Math.min(ctx.getMaxTokens(), cap) : cap;
 
-        // 预扣 = prompt token count + completion token count
+        // Reservation = prompt token count + completion token count
         long reserved = estimator.estimate(ctx.getPromptContext()) + completionReserved;
 
         return quotaService.preConsume(ctx.getTokenId(), reserved)

@@ -18,20 +18,20 @@ public class JanusCircuitBreakerConfig {
     @Bean
     public CircuitBreakerRegistry circuitBreakerRegistry() {
         CircuitBreakerConfig config = CircuitBreakerConfig.custom()
-                // 错误率 > 50% 熔断
+                // Trip the circuit when failure rate > 50%
                 .failureRateThreshold(50)
-                // 慢调用比例
+                // Slow call rate threshold
                 .slowCallRateThreshold(80)
                 .slowCallDurationThreshold(Duration.ofSeconds(10))
-                // OPEN持续30s
+                // Stay OPEN for 30s
                 .waitDurationInOpenState(Duration.ofSeconds(30))
-                // 滑动窗口20次
+                // Sliding window of 20 calls
                 .slidingWindowSize(20)
-                // 至少10次才统计
+                // Require at least 10 calls before evaluating
                 .minimumNumberOfCalls(10)
-                // 半开放3个探测
+                // 3 probe calls in half-open state
                 .permittedNumberOfCallsInHalfOpenState(3)
-                // 忽略掉这个错误，因为业务遇到这个错误，直接返回给端上，不会重试
+                // Ignore these errors: the business returns them directly to the client without retry
                 .ignoreException(e -> e instanceof WebClientResponseException w
                         && w.getStatusCode().is4xxClientError()
                         && w.getStatusCode().value() != 429)

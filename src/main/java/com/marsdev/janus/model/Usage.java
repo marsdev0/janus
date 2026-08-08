@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 用量（prompt + completion token 数）
+ * Usage (prompt + completion token count)
  *
  * @author geyan
  * @date 2026/8/7

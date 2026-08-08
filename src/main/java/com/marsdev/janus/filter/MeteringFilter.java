@@ -15,8 +15,8 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 /**
- * 对称结算：delta = reserved − actual（可正可负），幂等（reserved_records.status 0→1）
- * 不裸 subscribe：作为主流尾端，错误可传播
+ * Symmetric settlement: delta = reserved − actual (positive or negative); idempotent (reserved_records.status 0→1).
+ * No bare subscribe: runs as the main-flow tail, so errors propagate.
  *
  * @author geyan
  * @date 2026/8/4
@@ -31,10 +31,10 @@ public class MeteringFilter {
     private final UsageLogMapper usageLogMapper;
 
     /**
-     * 结算：
-     * 1. 标记 reserved_records 的 status
-     * 2. 如果状态是已结算，则跳过，这里用 mysql 实现幂等的
-     * 3. 如果未结算，a.先更新 reserved_records 的 status；b.调整redis的额度；c.更新 usage_logs
+     * Settlement:
+     * 1. Mark the status of reserved_records.
+     * 2. If already settled, skip — idempotency is enforced via MySQL.
+     * 3. If not settled: (a) update reserved_records status, (b) adjust the Redis balance, (c) update usage_logs.
      */
     public Mono<UsageResult> settle(RequestContext ctx, Usage usage, Long channelId) {
         if (usage == null) {
@@ -46,10 +46,10 @@ public class MeteringFilter {
         return Mono.fromCallable(() -> reservedRecordMapper.markSettle(ctx.getRequestId()))
                 .flatMap(update -> {
                     if (update == 0) {
-                        // 没有修改，已经是结算状态
+                        // No row updated; already settled
                         return Mono.just(new UsageResult(0, 0, true));
                     }
-                    // 调整额度; 更新 usage_logs
+                    // Adjust balance; update usage_logs
                     return quotaService.adjust(ctx.getTokenId(), delta)
                             .then(Mono.fromRunnable(() -> recordUsage(ctx, usage, channelId)))
                             .thenReturn(new UsageResult(actual, delta, false));

@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 结算结果
+ * Settlement result
  *
  * @author geyan
  * @date 2026/8/2

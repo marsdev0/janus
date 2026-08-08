@@ -8,7 +8,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 在途预扣记录 表对象
+ * In-flight reservation record entity
  *
  * @author geyan
  * @date 2026/8/7
@@ -21,32 +21,32 @@ public class ReservedRecord {
     private Long id;
 
     /**
-     * 请求id，幂等键
+     * Request ID, used as the idempotency key
      */
     private String requestId;
 
     /**
-     * 关联 token.id
+     * Associated token.id
      */
     private Long tokenId;
 
     /**
-     * token预扣额度
+     * Pre-deducted token quota (reserved)
      */
     private Long reserved;
 
     /**
-     * 0未结算 1已结算 2已超时退还
+     * Status: 0 = pending, 1 = settled, 2 = refunded on timeout
      */
     private Integer status;
 
     /**
-     * 预扣创建时间
+     * Reservation creation time
      */
     private LocalDateTime createdAt;
 
     /**
-     * 结算时间，当status=1 or 2时写入
+     * Settlement time, written when status = 1 or 2
      */
     private LocalDateTime settledAt;
 }

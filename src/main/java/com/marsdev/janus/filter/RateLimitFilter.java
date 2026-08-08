@@ -24,7 +24,7 @@ public class RateLimitFilter {
                     if (v == 0) {
                         return Mono.just(ctx);
                     } else {
-                        // 超限直接 429，不进预扣、不落 reserved_record
+                        // Over limit: return 429 directly, skip reservation and do not write reserved_record
                         return Mono.error(new JanusException(ErrorCode.RATE_LIMITED));
                     }
                 });

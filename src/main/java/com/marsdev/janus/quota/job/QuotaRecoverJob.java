@@ -13,7 +13,7 @@ import org.springframework.util.CollectionUtils;
 import java.util.List;
 
 /**
- * 进程 kill -9 / doFinally 未执行 → 预扣永久卡住。本 Job 分钟级扫超时未结算预扣退还
+ * Process kill -9 / doFinally not executed → reservation stuck forever. This job scans at minute-level for timed-out unsettled reservations and refunds them.
  *
  * @author geyan
  * @date 2026/8/8
@@ -29,8 +29,8 @@ public class QuotaRecoverJob {
     private final QuotaService quotaService;
 
     /**
-     * 1. 找出所有超时未结算的记录
-     * 2. 修改其状态，改成【已超时退还】
+     * 1. Find all timed-out, unsettled records
+     * 2. Update their status to [timed out and refunded]
      */
     @Scheduled(fixedDelay = 60_000L)
     public void recoverStaleReservations() {
@@ -42,7 +42,7 @@ public class QuotaRecoverJob {
         for (ReservedRecord r : list) {
             int updated = reservedRecordMapper.markTimedOut(r.getRequestId());
             if (updated > 0) {
-                // 修改成功，同时需要修改redis的余额
+                // Updated successfully; also adjust the Redis balance
                 quotaService.adjust(r.getTokenId(), r.getReserved()).subscribe(
                         v -> {
                             log.info("recover refunded requestId={} tokenId={} reserved={}",

@@ -55,7 +55,7 @@ public class RelayController {
                 .flatMap(quotaPreCheckFilter::preCheck)
                 .flatMap(ctx ->
                         upstreamProxy.relayNonStream(ctx.getRawBody(), ctx.getModel())
-                                // 核算
+                                // settle
                                 .flatMap(resp -> meteringFilter.settle(ctx, usageParser.parseUsageFromJson(resp), null)
                                         .thenReturn(resp)));
     }
@@ -71,7 +71,7 @@ public class RelayController {
     }
 
     /**
-     * 校验 Key 状态 / 过期 / 模型权限，绑定 tokenAuth
+     * Validate API key status / expiry / model permission, and bind tokenAuth
      */
     private RequestContext createAuth(RequestContext ctx, TokenAuth auth) {
         if (!auth.isActive()) {
@@ -86,7 +86,7 @@ public class RelayController {
 
 
     /**
-     * 解析 body → 构造 RequestContext（含 model / maxTokens / promptText）
+     * Parse body → build RequestContext (incl. model / maxTokens / promptText)
      */
     private Mono<RequestContext> createContext(String body) {
         return Mono.fromCallable(() -> {
@@ -113,7 +113,7 @@ public class RelayController {
     }
 
     /**
-     * 从 messages[].content 拼出 prompt 文本（兼容多模态 array content）
+     * Build prompt text from messages[].content (supports multimodal array content)
      */
     private String extractPrompt(JsonNode root) {
         StringBuilder sb = new StringBuilder();

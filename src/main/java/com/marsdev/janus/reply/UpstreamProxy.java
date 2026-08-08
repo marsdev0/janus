@@ -50,7 +50,7 @@ public class UpstreamProxy {
             };
 
     /**
-     * 新增 failover（故障转移）
+     * With failover
      */
     public Mono<String> relayNonStream(String body, String model) {
         List<Channel> candidates = router.route(model);
@@ -63,19 +63,19 @@ public class UpstreamProxy {
             return Mono.error(new JanusException(ErrorCode.ALL_CHANNELS_FAILED));
         }
         Channel ch = candidates.get(idx);
-        // 当前channel的专属断路器
+        // Circuit breaker dedicated to the current channel
         CircuitBreaker cb = cbRegistry.circuitBreaker("channel-" + ch.getId());
         return doRequestNonStream(ch, body)
                 .transformDeferred(CircuitBreakerOperator.of(cb))
                 .onErrorResume(e -> {
                     if (e instanceof WebClientResponseException w) {
                         int code = w.getStatusCode().value();
-                        // 4xx（除 429 限流）是客户端的错，换渠道也一样 → 直接透传给客户端
+                        // 4xx (except 429 rate limit) is a client error; switching channels won't help → passthrough to the client
                         if (w.getStatusCode().is4xxClientError() && code != 429) {
                             return Mono.error(e);
                         }
                     }
-                    // 5xx / 超时 / 连接失败 / 429 / 断路器 OPEN → 换渠道
+                    // 5xx / timeout / connection failure / 429 / circuit breaker OPEN → failover to another channel
                     return relayWithFailover(body, candidates, idx + 1);
                 });
     }
@@ -92,8 +92,8 @@ public class UpstreamProxy {
 
 
     /**
-     * failover 只能在首字符之前，一旦流式开始推送，就不能重试
-     * 流式转发 + failover + metering。metering 串进主流尾端（concatWith），不裸 subscribe
+     * Failover is only allowed before the first byte; once streaming has started, retry is not possible
+     * Stream forwarding + failover + metering. Metering is chained at the tail of the main stream (concatWith); no bare subscribe
      */
     public Flux<ServerSentEvent<String>> relayStreamWithMetering(RequestContext ctx) {
         List<Channel> candidates = router.route(ctx.getModel());
@@ -106,7 +106,7 @@ public class UpstreamProxy {
 
         return failoverStream(body, candidates, 0, firstByte, channelIdRef)
                 .doOnNext(sse -> {
-                    // 累加 usage / completion
+                    // Accumulate usage / completion
                     Usage u = usageParser.parseUsage(sse.data());
                     if (u != null) {
                         upstreamUsage.set(u);
@@ -117,10 +117,10 @@ public class UpstreamProxy {
                     }
                 })
                 .concatWith(Mono.defer(() -> {
-                    // 流结束 → 结算（仅一次）
+                    // Stream ended → settle (exactly once)
                     Usage u = upstreamUsage.get() != null
                             ? upstreamUsage.get()
-                            : new Usage(estimator.estimate(ctx.getPromptContext()), estimator.estimate(completionBuf.toString()));  // 本地兜底=主路径
+                            : new Usage(estimator.estimate(ctx.getPromptContext()), estimator.estimate(completionBuf.toString()));  // Local fallback = main path
                     Long channelId = channelIdRef.get() >= 0 ? channelIdRef.get() : null;
                     return meteringFilter.settle(ctx, u, channelId).then(Mono.empty());
                 }));
@@ -135,7 +135,7 @@ public class UpstreamProxy {
         CircuitBreaker cb = cbRegistry.circuitBreaker("channel-" + ch.getId());
         return doRequestStream(ch, body)
                 .transformDeferred(CircuitBreakerOperator.of(cb))
-                // 从上游收到第一个事件后标记，之后不能再 Failover（宁可失败也不重复输出）
+                // Mark after the first event received from upstream; no failover afterwards (fail rather than duplicate output)
                 .doOnNext(e -> {
                     firstByte.set(true);
                     channelIdRef.set(ch.getId());
@@ -143,16 +143,16 @@ public class UpstreamProxy {
                 .onErrorResume(e -> {
                     if (e instanceof WebClientResponseException w) {
                         int code = w.getStatusCode().value();
-                        // 4xx（除 429 限流）是客户端的错，换渠道也一样 → 直接透传给客户端
+                        // 4xx (except 429 rate limit) is a client error; switching channels won't help → passthrough to the client
                         if (w.getStatusCode().is4xxClientError() && code != 429) {
                             return Flux.error(e);
                         }
                     }
                     if (firstByte.get()) {
-                        // 首字节后 → 不重试
+                        // After first byte → no retry
                         return Flux.empty();
                     }
-                    // 首字节前失败 → Failover
+                    // Failed before first byte → failover
                     return failoverStream(body, candidates, idx + 1, firstByte, channelIdRef);
                 });
 

@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 用量账本 表对象
+ * Usage ledger entity
  *
  * @author geyan
  * @date 2026/8/6
@@ -22,47 +22,47 @@ public class UsageLog {
     private Long id;
 
     /**
-     * 请求id，幂等键
+     * Request ID, used as the idempotency key
      */
     private String requestId;
 
     /**
-     * 关联 token.id
+     * Associated token.id
      */
     private Long tokenId;
 
     /**
-     * 关联 channel.id
+     * Associated channel.id
      */
     private Long channelId;
 
     /**
-     * 请求的模型名
+     * Requested model name
      */
     private String model;
 
     /**
-     * prompt token 数
+     * Prompt token count
      */
     private Integer promptTokens;
 
     /**
-     * completion token 数
+     * Completion token count
      */
     private Integer completionTokens;
 
     /**
-     * 本地调用成本，单位元
+     * Local invocation cost, in CNY
      */
     private BigDecimal cost;
 
     /**
-     * 端到端延迟，单位毫秒
+     * End-to-end latency, in milliseconds
      */
     private Integer latencyMs;
 
     /**
-     * 请求状态 0成功 1失败
+     * Request status: 0 = success, 1 = failure
      */
     private Integer status;
 

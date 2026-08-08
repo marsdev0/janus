@@ -17,17 +17,17 @@ import java.util.Map;
 public class QuotaProperties {
 
     /**
-     * 透支额度，允许透支多少token数
+     * Overdraft credit limit: the number of tokens that may be overdrawn
      */
     private long creditLimit = 2000;
 
     /**
-     * 预扣超时阈值，即预扣之后，多少还没结算，单位：分钟
+     * Reservation timeout threshold: how long an unsettled reservation is considered stale, in minutes
      */
     private long recoverStaleMinutes = 10;
 
     /**
-     * 对账修正阈值(token)
+     * Reconciliation correction threshold (tokens)
      */
     private long reconcileThreshold = 100;
 

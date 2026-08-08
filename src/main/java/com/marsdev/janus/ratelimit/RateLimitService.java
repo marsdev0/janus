@@ -30,7 +30,7 @@ public class RateLimitService {
     }
 
     /**
-     * 检查 key、model 是否超限
+     * Check whether the API key / model exceeds the rate limit
      */
     public Mono<Integer> check(RequestContext ctx) {
         List<String> keys = List.of("rl:token:" + ctx.getTokenId(), "rl:model:" + ctx.getModel());
@@ -46,7 +46,7 @@ public class RateLimitService {
     }
 
     /**
-     * 渠道级限流
+     * Channel-level rate limiting
      */
     public Mono<Integer> checkChannel(RequestContext ctx, Long channelId) {
         List<String> keys = List.of("rl:channel:" + channelId);

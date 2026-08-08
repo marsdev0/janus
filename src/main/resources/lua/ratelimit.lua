@@ -1,6 +1,7 @@
--- 多级限流检查，任一超限返回拒绝
+-- Multi-level rate limit check; reject if any level exceeds its threshold.
 -- KEYS[1]=rl:token:{tokenId} KEYS[2]=rl:model:{model}
--- ARGV[1]=窗口大小（60） ARGV[2]=各级阈值逗号分隔 "100,50" ARGV[3]=now(ms) ARGV[4]=reqId
+-- ARGV[1]=window seconds (60) ARGV[2]=per-level thresholds, comma-separated "100,50"
+-- ARGV[3]=now(ms) ARGV[4]=reqId
 
 local window = tonumber(ARGV[1])
 local thresholds = ARGV[2]        -- "100,50"
@@ -8,23 +9,23 @@ local now = tonumber(ARGV[3])
 local reqId = ARGV[4]
 local cutoff = now - window * 1000
 
--- 解析阈值（Redis Lua 5.1 无 string.split，用 gmatch）
+-- Parse thresholds (Redis Lua 5.1 has no string.split; use gmatch)
 local limits = {}
 for v in string.gmatch(thresholds, '[^,]+') do
-	table.insert(limits, tonumber(v))
+    table.insert(limits, tonumber(v))
 end
 
 for i = 1, #KEYS do
-	local k = KEYS[i]
-	redis.call('ZREMRANGEBYSCORE', k, 0, cutoff)
-	local cnt = redis.call('ZCARD', k)
-	if cnt >= limits[i] then
-		return -i          -- 返回负数表示第 i 级超限（-1=Key级 -2=模型级）
-	end
+    local k = KEYS[i]
+    redis.call('ZREMRANGEBYSCORE', k, 0, cutoff)
+    local cnt = redis.call('ZCARD', k)
+    if cnt >= limits[i] then
+        return -i          -- negative = level i exceeded (-1=token, -2=model)
+    end
 end
--- 全部通过，加入各级
+-- All levels passed; record this request on each
 for i = 1, #KEYS do
-	redis.call('ZADD', KEYS[i], now, reqId .. ':' .. i)
-	redis.call('EXPIRE', KEYS[i], window)
+    redis.call('ZADD', KEYS[i], now, reqId .. ':' .. i)
+    redis.call('EXPIRE', KEYS[i], window)
 end
-return 0                    -- 放行
+return 0                    -- allow

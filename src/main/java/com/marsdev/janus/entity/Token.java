@@ -19,41 +19,41 @@ public class Token {
     private Long id;
 
     /**
-     * SHA256，用于校验比对
+     * SHA-256 hash, used for verification
      */
     private String keyHash;
 
     /**
-     * key的前8位，用于列表展示
+     * First 8 characters of the key, for display in lists
      */
     private String keyPrefix;
 
     private Long userId;
 
     /**
-     * Key名称
+     * Key name
      */
     private String name;
 
     /**
-     * 允许的模型,逗号分隔,空=全部
+     * Allowed models, comma-separated; empty = all
      */
     private String models;
 
     /**
-     * 总额度(token)
+     * Total quota (tokens)
      */
     private Long quotaLimit;
 
     /**
-     * 状态:1启用 0禁用
+     * Status: 1 = enabled, 0 = disabled
      */
     private Integer status;
 
     private LocalDateTime createdAt;
 
     /**
-     * 过期时间,NULL=永久有效
+     * Expiry time; NULL = never expires
      */
     private LocalDateTime expiresAt;
 }

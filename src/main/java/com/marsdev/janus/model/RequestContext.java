@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 跨 Filter 链的请求上下文
+ * Request context shared across the filter chain
  *
  * @author geyan
  * @date 2026/8/7

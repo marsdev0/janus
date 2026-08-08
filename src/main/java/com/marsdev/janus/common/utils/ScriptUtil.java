@@ -11,7 +11,7 @@ import org.springframework.scripting.support.ResourceScriptSource;
 public class ScriptUtil {
 
     /**
-     * 加载脚本
+     * Load a script
      */
     public static DefaultRedisScript<Long> load(String path) {
         DefaultRedisScript<Long> s = new DefaultRedisScript<>();

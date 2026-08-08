@@ -19,42 +19,42 @@ public class Channel {
     private Long id;
 
     /**
-     * 渠道名
+     * Channel name
      */
     private String name;
 
     /**
-     * 上游厂商/平台: openai/azure/zhipu/ollama/vllm/anthropic/google/proxy
+     * Upstream provider/platform: openai/azure/zhipu/ollama/vllm/anthropic/google/proxy
      */
     private String provider;
 
     /**
-     * 上游基础地址
+     * Upstream base URL
      */
     private String baseUrl;
 
     /**
-     * 渠道密钥（AES 加密存储）
+     * Channel API key (AES-encrypted at rest)
      */
     private String apiKey;
 
     /**
-     * 支持的模型，逗号分隔
+     * Supported models, comma-separated
      */
     private String models;
 
     /**
-     * 权重
+     * Weight
      */
     private Integer weight;
 
     /**
-     * 优先级，越大越优先（主备）
+     * Priority; higher = preferred (primary/backup)
      */
     private Integer priority;
 
     /**
-     * 状态：1 启用 / 0 禁用
+     * Status: 1 = enabled / 0 = disabled
      */
     private Integer status;
 

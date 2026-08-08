@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * 解析 SSE / JSON 响应里的 usage 与 delta；注入 stream_options
+ * Parse usage and delta from SSE / JSON responses; inject stream_options
  *
  * @author geyan
  * @date 2026/8/5
@@ -23,7 +23,7 @@ public class UsageParser {
     private final ObjectMapper objectMapper;
 
     /**
-     * 非流式 JSON 响应 → usage；无则 zero
+     * Non-streaming JSON response → usage; zero if absent
      */
     public Usage parseUsageFromJson(String resp) {
         JsonNode root = readTree(resp);
@@ -52,7 +52,7 @@ public class UsageParser {
     }
 
     /**
-     * 给请求体注入 stream_options.include_usage=true（流式主动要 usage）
+     * Inject stream_options.include_usage=true into the request body (explicitly request usage for streaming)
      */
     public String withStreamOptions(String rawBody) {
         try {
@@ -68,7 +68,7 @@ public class UsageParser {
     }
 
     /**
-     * SSE data（JSON 或 [DONE]）→ usage; 无则 null
+     * SSE data (JSON or [DONE]) → usage; null if absent
      */
     public Usage parseUsage(String data) {
         JsonNode root = readTree(data);
@@ -86,7 +86,7 @@ public class UsageParser {
     }
 
     /**
-     * SSE data → delta.content 文本; 无则 null
+     * SSE data → delta.content text; null if absent
      */
     public String parseDeltaContent(String data) {
         JsonNode root = readTree(data);

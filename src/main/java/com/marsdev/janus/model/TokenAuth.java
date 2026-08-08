@@ -29,7 +29,7 @@ public class TokenAuth {
     }
 
     public boolean modelAllowed(String model) {
-        // 空=允许全部
+        // empty = all allowed
         if (models == null || models.isBlank()) {
             return true;
         }

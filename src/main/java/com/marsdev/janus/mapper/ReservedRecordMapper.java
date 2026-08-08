@@ -16,22 +16,22 @@ import java.util.List;
 public interface ReservedRecordMapper extends BaseMapper<ReservedRecord> {
 
     /**
-     * 未结算
+     * Pending settlement
      */
     int PENDING = 0;
 
     /**
-     * 已结算
+     * Settled
      */
     int SETTLED = 1;
 
     /**
-     * 已超时退还
+     * Refunded on timeout
      */
     int TIMEOUT_REFUNDED = 2;
 
     /**
-     * 幂等结算：status 0→1，返回受影响行数（1=首次，0=已结算）
+     * Idempotent settlement: status 0→1; returns affected rows (1 = first time, 0 = already settled)
      */
     default int markSettle(String requestId) {
         LambdaUpdateWrapper<ReservedRecord> updateWrapper = new LambdaUpdateWrapper<>();
@@ -43,7 +43,7 @@ public interface ReservedRecordMapper extends BaseMapper<ReservedRecord> {
     }
 
     /**
-     * 该 token 在途预扣总和（status=0）
+     * Sum of in-flight reservations for this token (status = 0)
      */
     default long sumReservedByToken(Long tokenId, int status) {
         LambdaUpdateWrapper<ReservedRecord> wrapper = new LambdaUpdateWrapper<>();
@@ -60,7 +60,7 @@ public interface ReservedRecordMapper extends BaseMapper<ReservedRecord> {
     }
 
     /**
-     * 找出超时未结算的在途预扣
+     * Find stale in-flight reservations that have not been settled
      */
     default List<ReservedRecord> findStale(int status, long minutes) {
         LambdaQueryWrapper<ReservedRecord> wrapper = new LambdaQueryWrapper<>();
@@ -70,7 +70,7 @@ public interface ReservedRecordMapper extends BaseMapper<ReservedRecord> {
     }
 
     /**
-     * 幂等超时退还：status 0→2
+     * Idempotent timeout refund: status 0→2
      */
     default int markTimedOut(String requestId) {
         LambdaUpdateWrapper<ReservedRecord> wrapper = new LambdaUpdateWrapper<>();

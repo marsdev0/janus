@@ -15,7 +15,7 @@ public interface ChannelMapper extends BaseMapper<Channel> {
 
     default List<Channel> findEnableByModel(String model) {
         List<Channel> all = selectList(new QueryWrapper<>());
-        // 不能用contains(model)，需要改成精确匹配
+        // Cannot use contains(model); exact match is required
         return all.stream().filter(ch -> ch.getStatus() == 1
                         && Arrays.stream(ch.getModels().split(",")).map(String::trim).anyMatch(model::equals))
                 .toList();

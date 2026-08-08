@@ -16,9 +16,9 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 /**
- * 配额真相源：MySQL（usage_logs 账本 + reserved_records 在途）。Redis 为热路径，可重建
+ * Source of truth for quota: MySQL (usage_logs ledger + reserved_records in-flight). Redis is the hot path and can be rebuilt.
  * <p>
- * 定时刷新redis的余额
+ * Periodically refreshes the Redis balance.
  *
  * @author geyan
  * @date 2026/8/7
@@ -54,7 +54,7 @@ public class QuotaBootstrap {
     }
 
     /**
-     * 启动 5s 后预热所有启用 token，之后每 5min 兜底刷新
+     * 5s after startup, warm up all enabled tokens; then fallback-refresh every 5min
      */
     @Scheduled(initialDelay = 5_000L, fixedDelay = 300_000L)
     public void warmup() {

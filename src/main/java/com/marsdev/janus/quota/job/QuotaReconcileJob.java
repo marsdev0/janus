@@ -18,7 +18,7 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 /**
- * 分钟级对账：expected = quota_limit − Σusage − Σ(reserved status=0)，与 Redis 偏差超阈值则修正
+ * Minute-level reconciliation: expected = quota_limit − Σusage − Σ(reserved status=0); corrects Redis when the deviation exceeds the threshold
  *
  * @author geyan
  * @date 2026/8/8
@@ -37,13 +37,13 @@ public class QuotaReconcileJob {
 
     @Scheduled(fixedDelay = 60_000L)
     public void reconcile() {
-        // 1. 找出所有token
+        // 1. Find all tokens
         List<Token> tokens = tokenMapper.selectList(new QueryWrapper<Token>().eq("status", TokenMapper.ENABLE));
         if (CollectionUtils.isEmpty(tokens)) {
             return;
         }
         for (Token t : tokens) {
-            // 2. 计算 expected
+            // 2. Compute expected
             long limit = t.getQuotaLimit() != null ? t.getQuotaLimit() : 0L;
             long used = usageLogMapper.sumTokensByToken(t.getId());
             long inFlight = reservedRecordMapper.sumReservedByToken(t.getId(), ReservedRecordMapper.PENDING);

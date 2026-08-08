@@ -5,7 +5,7 @@ spring:
   application:
     name: janus
   datasource:
-    # url 含 &，YAML 里必须加引号，否则 & 会被当作锚点（anchor）解析报错
+    # url contains '&', must be quoted in YAML — otherwise '&' is parsed as an anchor and fails
     url: "jdbc:mysql://127.0.0.1:3306/janus?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai"
     username: root
     password: root
@@ -25,7 +25,7 @@ mybatis-plus:
 janus:
   upstream:
     base-url: http://127.0.0.1:28000/v1
-    api-key: "123456"   # 纯数字串，加引号避免被当整数
+    api-key: "123456"   # numeric string, quoted to avoid being parsed as a number
     timeout: 60s
   quota:
     credit-limit: 2000

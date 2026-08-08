@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 public class PromptTokenEstimator {
 
     /**
-     *  OpenAI 的经典说法（Cookbook）：
+     *  From the OpenAI Cookbook:
      *  │ Every message follows this format: <|im_start|>{role/name}\n{content}<|im_end|>\n
      *  │ Each message has a constant overhead of ~4 tokens.
      */
@@ -29,7 +29,7 @@ public class PromptTokenEstimator {
     }
 
     /**
-     * 计算 prompt 的token
+     * Count the tokens of a prompt
      */
     public long estimate(String prompt) {
         if (prompt == null || prompt.isEmpty()) {
