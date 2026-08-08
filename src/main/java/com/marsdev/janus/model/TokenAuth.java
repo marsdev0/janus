@@ -25,11 +25,15 @@ public class TokenAuth {
     private LocalDateTime expiresAt;
 
     public boolean isActive() {
-        return this.status == 1;
+        return status == 1 && (expiresAt == null || expiresAt.isAfter(LocalDateTime.now()));
     }
 
     public boolean modelAllowed(String model) {
-        return Arrays.stream(this.models.split(","))
+        // 空=允许全部
+        if (models == null || models.isBlank()) {
+            return true;
+        }
+        return Arrays.stream(models.split(","))
                 .map(String::trim)
                 .anyMatch(model::equals);
     }

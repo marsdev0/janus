@@ -44,18 +44,25 @@ public class RelayController {
     private final UsageParser usageParser;
 
     @PostMapping(value = "/chat/completions", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<String> chat(@RequestBody String body, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String auth) {
+    public Mono<String> chat(@RequestBody String body,
+                             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String auth) {
         return createContext(body)
-                // auth验证
                 .flatMap(ctx -> authFilter.authenticate(auth).map(a -> createAuth(ctx, a)))
-                // token预扣
                 .flatMap(quotaPreCheckFilter::preCheck)
-                // 执行
                 .flatMap(ctx ->
                         upstreamProxy.relayNonStream(ctx.getRawBody(), ctx.getModel())
                                 // 核算
                                 .flatMap(resp -> meteringFilter.settle(ctx, usageParser.parseUsageFromJson(resp), null)
                                         .thenReturn(resp)));
+    }
+
+    @PostMapping(value = "/chat/completions", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<String>> chatStream(@RequestBody String body,
+                                                    @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String auth) {
+        return createContext(body)
+                .flatMap(ctx -> authFilter.authenticate(auth).map(a -> createAuth(ctx, a)))
+                .flatMap(quotaPreCheckFilter::preCheck)
+                .flatMapMany(upstreamProxy::relayStreamWithMetering);
     }
 
     /**
@@ -70,27 +77,6 @@ public class RelayController {
         }
         ctx.setTokenAuth(auth);
         return ctx;
-    }
-
-    private String extractModel(String body) {
-        try {
-            JsonNode node = objectMapper.readTree(body);
-            JsonNode modelNode = node.get("model");
-            return modelNode != null && modelNode.isTextual() ? modelNode.asText() : null;
-        } catch (Exception e) {
-            log.error("extractModel fail ", e);
-        }
-        return null;
-    }
-
-    @PostMapping(value = "/chat/completions", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ServerSentEvent<String>> chatStream(@RequestBody String body) {
-        String model = extractModel(body);
-        if (model == null) {
-            // body 不是合法 JSON，或没有 model 字段 → 客户端的锅，不该进路由
-            return Flux.error(new JanusException(ErrorCode.BAD_REQUEST));
-        }
-        return upstreamProxy.relayStream(body, model);
     }
 
 

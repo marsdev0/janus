@@ -36,7 +36,7 @@ public class QuotaRecoverJob {
     public void recoverStaleReservations() {
         List<ReservedRecord> list = reservedRecordMapper.findStale(ReservedRecordMapper.PENDING, quotaProperties.getRecoverStaleMinutes());
         if (CollectionUtils.isEmpty(list)) {
-            log.error("quota recover job list is empty");
+            log.debug("quota recover job list is empty");
             return;
         }
         for (ReservedRecord r : list) {

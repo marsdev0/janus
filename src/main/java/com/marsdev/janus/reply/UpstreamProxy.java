@@ -4,6 +4,10 @@ import com.marsdev.janus.channel.ChannelRouter;
 import com.marsdev.janus.common.ErrorCode;
 import com.marsdev.janus.common.JanusException;
 import com.marsdev.janus.entity.Channel;
+import com.marsdev.janus.filter.MeteringFilter;
+import com.marsdev.janus.model.RequestContext;
+import com.marsdev.janus.model.Usage;
+import com.marsdev.janus.quota.PromptTokenEstimator;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.reactor.circuitbreaker.operator.CircuitBreakerOperator;
@@ -20,6 +24,8 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author geyan
@@ -32,6 +38,9 @@ public class UpstreamProxy {
     private final WebClient webClient;
     private final ChannelRouter router;
     private final CircuitBreakerRegistry cbRegistry;
+    private final UsageParser usageParser;
+    private final PromptTokenEstimator estimator;
+    private final MeteringFilter meteringFilter;
 
     private static final int MAX_ATTEMPTS = 10;
 
@@ -84,23 +93,53 @@ public class UpstreamProxy {
 
     /**
      * failover 只能在首字符之前，一旦流式开始推送，就不能重试
+     * 流式转发 + failover + metering。metering 串进主流尾端（concatWith），不裸 subscribe
      */
-    public Flux<ServerSentEvent<String>> relayStream(String body, String model) {
-        List<Channel> candidates = router.route(model);
-        return relayStreamWithFailover(body, candidates, 0);
+    public Flux<ServerSentEvent<String>> relayStreamWithMetering(RequestContext ctx) {
+        List<Channel> candidates = router.route(ctx.getModel());
+        String body = usageParser.withStreamOptions(ctx.getRawBody());
+
+        AtomicBoolean firstByte = new AtomicBoolean(false);
+        AtomicLong channelIdRef = new AtomicLong(-1);
+        AtomicReference<Usage> upstreamUsage = new AtomicReference<>();
+        StringBuilder completionBuf = new StringBuilder();
+
+        return failoverStream(body, candidates, 0, firstByte, channelIdRef)
+                .doOnNext(sse -> {
+                    // 累加 usage / completion
+                    Usage u = usageParser.parseUsage(sse.data());
+                    if (u != null) {
+                        upstreamUsage.set(u);
+                    }
+                    String delta = usageParser.parseDeltaContent(sse.data());
+                    if (delta != null) {
+                        completionBuf.append(delta);
+                    }
+                })
+                .concatWith(Mono.defer(() -> {
+                    // 流结束 → 结算（仅一次）
+                    Usage u = upstreamUsage.get() != null
+                            ? upstreamUsage.get()
+                            : new Usage(estimator.estimate(ctx.getPromptContext()), estimator.estimate(completionBuf.toString()));  // 本地兜底=主路径
+                    Long channelId = channelIdRef.get() >= 0 ? channelIdRef.get() : null;
+                    return meteringFilter.settle(ctx, u, channelId).then(Mono.empty());
+                }));
     }
 
-    private Flux<ServerSentEvent<String>> relayStreamWithFailover(String body, List<Channel> candidates, int idx) {
+    private Flux<ServerSentEvent<String>> failoverStream(String body, List<Channel> candidates, int idx,
+                                                         AtomicBoolean firstByte, AtomicLong channelIdRef) {
         if (idx >= candidates.size() || idx >= MAX_ATTEMPTS) {
             return Flux.error(new JanusException(ErrorCode.ALL_CHANNELS_FAILED));
         }
         Channel ch = candidates.get(idx);
         CircuitBreaker cb = cbRegistry.circuitBreaker("channel-" + ch.getId());
-        AtomicBoolean firstByteReceived = new AtomicBoolean(false);
         return doRequestStream(ch, body)
                 .transformDeferred(CircuitBreakerOperator.of(cb))
                 // 从上游收到第一个事件后标记，之后不能再 Failover（宁可失败也不重复输出）
-                .doOnNext(e -> firstByteReceived.set(true))
+                .doOnNext(e -> {
+                    firstByte.set(true);
+                    channelIdRef.set(ch.getId());
+                })
                 .onErrorResume(e -> {
                     if (e instanceof WebClientResponseException w) {
                         int code = w.getStatusCode().value();
@@ -109,12 +148,12 @@ public class UpstreamProxy {
                             return Flux.error(e);
                         }
                     }
-                    if (firstByteReceived.get()) {
+                    if (firstByte.get()) {
                         // 首字节后 → 不重试
                         return Flux.empty();
                     }
                     // 首字节前失败 → Failover
-                    return relayStreamWithFailover(body, candidates, idx + 1);
+                    return failoverStream(body, candidates, idx + 1, firstByte, channelIdRef);
                 });
 
     }
