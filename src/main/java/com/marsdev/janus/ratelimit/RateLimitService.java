@@ -7,7 +7,7 @@
 
 package com.marsdev.janus.ratelimit;
 
-import com.marsdev.janus.common.utils.ScriptUtil;
+import com.marsdev.janus.common.util.ScriptUtils;
 import com.marsdev.janus.model.RequestContext;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +33,7 @@ public class RateLimitService {
 
     @PostConstruct
     public void init() {
-        ratelimitScript = ScriptUtil.load("lua/ratelimit.lua");
+        ratelimitScript = ScriptUtils.load("lua/ratelimit.lua");
     }
 
     /**

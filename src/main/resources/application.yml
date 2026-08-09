@@ -14,6 +14,18 @@ spring:
     redis:
       host: 127.0.0.1
       port: 6379
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      acks: all  # 持久化保证
+      retries: 3
+    consumer:
+      group-id: janus-audit-writer
+      enable-auto-commit: false  # 手动 ack
+      max-poll-records: 100  # 批量大小
+    listener:
+      type: batch        # 批量消费（配合 List<ConsumerRecord> 参数）
+      ack-mode: manual   # 手动提交（配合 Acknowledgment 参数；否则 checkAckArg 抛异常）
 
 mybatis-plus:
   configuration:

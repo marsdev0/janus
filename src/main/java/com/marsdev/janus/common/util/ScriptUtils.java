@@ -5,7 +5,7 @@
  * See the LICENSE file in the project root for full license information.
  */
 
-package com.marsdev.janus.common.utils;
+package com.marsdev.janus.common.util;
 
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -15,7 +15,7 @@ import org.springframework.scripting.support.ResourceScriptSource;
  * @author geyan
  * @date 2026/8/8
  */
-public class ScriptUtil {
+public final class ScriptUtils {
 
     /**
      * Load a script

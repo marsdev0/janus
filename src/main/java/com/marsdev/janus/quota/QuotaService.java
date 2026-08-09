@@ -7,14 +7,12 @@
 
 package com.marsdev.janus.quota;
 
-import com.marsdev.janus.common.utils.ScriptUtil;
+import com.marsdev.janus.common.util.ScriptUtils;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
-import org.springframework.scripting.support.ResourceScriptSource;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -40,8 +38,8 @@ public class QuotaService {
 
     @PostConstruct
     public void init() {
-        preConsumeScript = ScriptUtil.load("lua/quota_pre_consume.lua");
-        adjustScript = ScriptUtil.load("lua/quota_adjust.lua");
+        preConsumeScript = ScriptUtils.load("lua/quota_pre_consume.lua");
+        adjustScript = ScriptUtils.load("lua/quota_adjust.lua");
 
     }
 

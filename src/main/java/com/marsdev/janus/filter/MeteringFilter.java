@@ -7,9 +7,10 @@
 
 package com.marsdev.janus.filter;
 
+import com.marsdev.janus.audit.AuditEvent;
+import com.marsdev.janus.audit.AuditProducer;
 import com.marsdev.janus.common.ErrorCode;
 import com.marsdev.janus.common.JanusException;
-import com.marsdev.janus.entity.UsageLog;
 import com.marsdev.janus.mapper.ReservedRecordMapper;
 import com.marsdev.janus.mapper.UsageLogMapper;
 import com.marsdev.janus.model.RequestContext;
@@ -36,6 +37,7 @@ public class MeteringFilter {
     private final QuotaService quotaService;
     private final ReservedRecordMapper reservedRecordMapper;
     private final UsageLogMapper usageLogMapper;
+    private final AuditProducer auditProducer;
 
     /**
      * Settlement:
@@ -58,24 +60,20 @@ public class MeteringFilter {
                     }
                     // Adjust balance; update usage_logs
                     return quotaService.adjust(ctx.getTokenId(), delta)
-                            .then(Mono.fromRunnable(() -> recordUsage(ctx, usage, channelId)))
+                            .then(Mono.fromRunnable(() -> auditProducer.send(createAuditEvent(ctx, usage, channelId))))
                             .thenReturn(new UsageResult(actual, delta, false));
                 });
     }
 
-    private void recordUsage(RequestContext ctx, Usage usage, Long channelId) {
-        UsageLog u = new UsageLog();
-        u.setRequestId(ctx.getRequestId());
-        u.setTokenId(ctx.getTokenId());
-        u.setChannelId(channelId);
-        u.setModel(ctx.getModel());
-        u.setPromptTokens((int) usage.getPrompt());
-        u.setCompletionTokens((int) usage.getCompletion());
-        u.setStatus(0);
-        try {
-            usageLogMapper.insert(u);
-        } catch (Exception e) {
-            log.error("recordUsage fail requestId={}", ctx.getRequestId(), e);
-        }
+    private AuditEvent createAuditEvent(RequestContext ctx, Usage usage, Long channelId) {
+        return AuditEvent.builder()
+                .requestId(ctx.getRequestId())
+                .tokenId(ctx.getTokenId())
+                .channelId(channelId)
+                .model(ctx.getModel())
+                .promptTokens(usage.getPrompt())
+                .completionTokens(usage.getCompletion())
+                .status(0)
+                .build();
     }
 }
