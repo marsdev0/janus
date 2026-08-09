@@ -31,9 +31,14 @@ public class Channel {
     private String name;
 
     /**
-     * Upstream provider/platform: openai/azure/zhipu/ollama/vllm/anthropic/google/proxy
+     * 商业身份: openai/azure/zhipu/ollama/vllm/anthropic/google/proxy
      */
     private String provider;
+
+    /**
+     * 协议类型：openai/claude/gemini  ← 决定用哪个 ProviderAdapter
+     */
+    private String protocol;
 
     /**
      * Upstream base URL
