@@ -57,15 +57,19 @@ public class UpstreamProxy {
             };
 
     /**
-     * With failover
+     * 非流式转发 + 计量（对标流式 relayStreamWithMetering）
      */
-    public Mono<String> relayNonStream(String body, String model) {
-        List<Channel> candidates = router.route(model);
-        return relayWithFailover(body, candidates, 0);
-
+    public Mono<String> relayNonStreamWithMetering(RequestContext ctx) {
+        AtomicLong channelIdRef = new AtomicLong(-1);
+        List<Channel> candidates = router.route(ctx.getModel());
+        return relayWithFailover(ctx.getRawBody(), candidates, 0, channelIdRef)
+                .flatMap(resp -> {
+                    Long channelId = channelIdRef.get() >= 0 ? channelIdRef.get() : null;
+                    return meteringFilter.settle(ctx, usageParser.parseUsageFromJson(resp), channelId).thenReturn(resp);
+                });
     }
 
-    private Mono<String> relayWithFailover(String body, List<Channel> candidates, int idx) {
+    private Mono<String> relayWithFailover(String body, List<Channel> candidates, int idx, AtomicLong channelIdRef) {
         if (idx >= candidates.size() || idx >= MAX_ATTEMPTS) {
             return Mono.error(new JanusException(ErrorCode.ALL_CHANNELS_FAILED));
         }
@@ -74,6 +78,7 @@ public class UpstreamProxy {
         CircuitBreaker cb = cbRegistry.circuitBreaker("channel-" + ch.getId());
         return doRequestNonStream(ch, body)
                 .transformDeferred(CircuitBreakerOperator.of(cb))
+                .doOnNext(resp -> channelIdRef.set(ch.getId()))
                 .onErrorResume(e -> {
                     if (e instanceof WebClientResponseException w) {
                         int code = w.getStatusCode().value();
@@ -83,7 +88,7 @@ public class UpstreamProxy {
                         }
                     }
                     // 5xx / timeout / connection failure / 429 / circuit breaker OPEN → failover to another channel
-                    return relayWithFailover(body, candidates, idx + 1);
+                    return relayWithFailover(body, candidates, idx + 1, channelIdRef);
                 });
     }
 

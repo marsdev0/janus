@@ -12,13 +12,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marsdev.janus.common.ErrorCode;
 import com.marsdev.janus.common.JanusException;
 import com.marsdev.janus.filter.AuthFilter;
-import com.marsdev.janus.filter.MeteringFilter;
 import com.marsdev.janus.filter.QuotaPreCheckFilter;
 import com.marsdev.janus.filter.RateLimitFilter;
 import com.marsdev.janus.model.RequestContext;
 import com.marsdev.janus.model.TokenAuth;
 import com.marsdev.janus.reply.UpstreamProxy;
-import com.marsdev.janus.reply.UsageParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -48,8 +46,6 @@ public class RelayController {
     private final ObjectMapper objectMapper;
     private final AuthFilter authFilter;
     private final QuotaPreCheckFilter quotaPreCheckFilter;
-    private final MeteringFilter meteringFilter;
-    private final UsageParser usageParser;
     private final RateLimitFilter rateLimitFilter;
 
 
@@ -60,11 +56,7 @@ public class RelayController {
                 .flatMap(ctx -> authFilter.authenticate(auth).map(a -> createAuth(ctx, a)))
                 .flatMap(rateLimitFilter::check)
                 .flatMap(quotaPreCheckFilter::preCheck)
-                .flatMap(ctx ->
-                        upstreamProxy.relayNonStream(ctx.getRawBody(), ctx.getModel())
-                                // settle
-                                .flatMap(resp -> meteringFilter.settle(ctx, usageParser.parseUsageFromJson(resp), null)
-                                        .thenReturn(resp)));
+                .flatMap(upstreamProxy::relayNonStreamWithMetering);
     }
 
     @PostMapping(value = "/chat/completions", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
