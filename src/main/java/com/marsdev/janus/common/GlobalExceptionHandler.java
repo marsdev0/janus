@@ -28,7 +28,7 @@ public class GlobalExceptionHandler {
                 .body(ApiResult.fail(e.getErrCode(), e.getErrMsg()));
     }
 
-    /** 上游错误（已归一化为 GatewayError）：保留上游 HTTP 状态码 + 归一化错误码 + 原始 body */
+    /** Upstream error (already normalized into GatewayError): keep upstream HTTP status + normalized error code + raw body */
     @ExceptionHandler(GatewayError.class)
     public ResponseEntity<ApiResult<Void>> handleGateway(GatewayError e) {
         String msg = e.getCode() + ": " + e.getRawBody();
@@ -36,7 +36,7 @@ public class GlobalExceptionHandler {
                 .body(ApiResult.fail(e.getStatus(), msg));
     }
 
-    /** 上游连接失败/超时（未拿到 HTTP 响应）→ 502 Bad Gateway */
+    /** Upstream connection failure / timeout (no HTTP response received) → 502 Bad Gateway */
     @ExceptionHandler(WebClientRequestException.class)
     public ResponseEntity<ApiResult<Void>> handleUpstreamConn(WebClientRequestException e) {
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)

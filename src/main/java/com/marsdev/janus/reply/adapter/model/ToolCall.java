@@ -12,11 +12,11 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.Data;
 
 /**
- * 工具【调用】 —— <b>响应方向</b>。出现在 assistant 消息的 {@link ChatMessage#getToolCalls()} 里
- * 表示「模型实际调用了哪个工具」
+ * Tool [call] — <b>response direction</b>. Appears in {@link ChatMessage#getToolCalls()} of an
+ * assistant message, representing "which tool the model actually invoked".
  *
- * <p>类比：客人点的那道单。含具体实参值
- * <p>OpenAI 形态：{@code {id, type:"function", function:{name, arguments(JSON 字符串)}}}
+ * <p>Analogy: the dish the guest ordered. Includes the concrete argument values.
+ * <p>OpenAI shape: {@code {id, type:"function", function:{name, arguments(JSON string)}}}
  *
  * @author geyan
  * @date 2026/8/9
@@ -26,17 +26,18 @@ import lombok.Data;
 public class ToolCall {
 
     /**
-     * 本次调用的唯一 id；后续 role:tool 的结果消息用 {@link ChatMessage#getToolCallId()} 关联回这里
+     * The unique id of this call; the subsequent role:tool result message links back here
+     * via {@link ChatMessage#getToolCallId()}
      */
     private String id;
 
     /**
-     * 类型，同 {@link Tool#getType()}，目前 "function"
+     * Type, same as {@link Tool#getType()}; currently "function"
      */
     private String type = "function";
 
     /**
-     * 本次调用的函数名 + 实参（{@link FunctionCall}）
+     * The function name + arguments of this call ({@link FunctionCall})
      */
     private FunctionCall function;
 }

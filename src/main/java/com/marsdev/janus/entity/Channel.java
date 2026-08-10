@@ -31,12 +31,12 @@ public class Channel {
     private String name;
 
     /**
-     * 商业身份: openai/azure/zhipu/ollama/vllm/anthropic/google/proxy
+     * Commercial identity: openai/azure/zhipu/ollama/vllm/anthropic/google/proxy
      */
     private String provider;
 
     /**
-     * 协议类型：openai/claude/gemini  ← 决定用哪个 ProviderAdapter
+     * Protocol type: openai/claude/gemini  ← determines which ProviderAdapter to use
      */
     private String protocol;
 

@@ -10,12 +10,14 @@ package com.marsdev.janus.reply.adapter.model;
 import lombok.Getter;
 
 /**
- * 归一化后的上游错误。
+ * Normalized upstream error.
  *
- * <p>各 adapter 的 {@code normalizeError} 把厂商错误码映射成它，UpstreamProxy 据此决定是否 failover。
+ * <p>Each adapter's {@code normalizeError} maps the vendor error code onto this, and
+ * UpstreamProxy decides whether to failover based on it.
  *
- * <p>继承 {@link RuntimeException}：可以直接作为响应式链路的 error 信号抛出（{@code Mono.error(...)}），
- * 在 {@code onErrorResume} 里用 {@code instanceof GatewayError} 捕获。
+ * <p>Extends {@link RuntimeException}: can be thrown directly as an error signal in a reactive
+ * chain ({@code Mono.error(...)}), and caught with {@code instanceof GatewayError} inside
+ * {@code onErrorResume}.
  *
  * @author geyan
  * @date 2026/8/9
@@ -24,32 +26,32 @@ import lombok.Getter;
 public class GatewayError extends RuntimeException {
 
     /**
-     * 原始 HTTP 状态码（4xx / 5xx）
+     * Original HTTP status code (4xx / 5xx)
      */
     private final int status;
 
     /**
-     * 归一化错误码（如 OPENAI_429 / CLAUDE_529 / GEMINI_500），便于日志和监控归类
+     * Normalized error code (e.g. OPENAI_429 / CLAUDE_529 / GEMINI_500), convenient for log/metrics grouping
      */
     private final String code;
 
     /**
-     * 上游返回的原始响应体，便于排查（保留原文不解析）
+     * The raw response body returned by the upstream, kept for troubleshooting (kept as-is, not parsed)
      */
     private final String rawBody;
 
     /**
-     * 是否可重试 —— 决定是否触发 failover：
+     * Whether retryable — decides whether to trigger failover:
      * <ul>
-     *   <li><b>true</b>：429 限流 / 5xx 服务端错误 / 超时 —— 换个渠道可能成功，应 failover</li>
-     *   <li><b>false</b>：400 请求格式错 / 401 鉴权失败 —— 换渠道也一样失败，直接返回不重试</li>
+     *   <li><b>true</b>: 429 rate limit / 5xx server error / timeout — another channel might succeed, so failover</li>
+     *   <li><b>false</b>: 400 bad request / 401 auth failure — another channel would fail the same way, so return directly without retry</li>
      * </ul>
-     * UpstreamProxy 的 onErrorResume 读这个字段决定走向。
+     * UpstreamProxy's onErrorResume reads this field to decide what to do.
      */
     private final boolean retryable;
 
     public GatewayError(int status, String code, String rawBody, boolean retryable) {
-        super(code + " (" + status + "): " + rawBody);   // 作为异常 message，便于日志直接打印
+        super(code + " (" + status + "): " + rawBody);   // used as the exception message so logs print it directly
         this.status = status;
         this.code = code;
         this.rawBody = rawBody;

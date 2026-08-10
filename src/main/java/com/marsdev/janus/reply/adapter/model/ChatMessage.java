@@ -19,12 +19,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Canonical 消息模型，对应 OpenAI messages 数组的一个元素。role 决定语义：
+ * Canonical message model, corresponding to one element of the OpenAI messages array. role
+ * determines the semantics:
  * <ul>
- *   <li><b>system</b> —— 系统指令；OpenAI 放 messages 里，Claude 要提到顶层 system 字段（ClaudeAdapter 处理）</li>
- *   <li><b>user</b> —— 用户输入</li>
- *   <li><b>assistant</b> —— 模型回复，可能带 {@link #toolCalls}（模型发起的工具调用）</li>
- *   <li><b>tool</b> —— 工具执行结果回填，用 {@link #toolCallId} 关联回那次 ToolCall</li>
+ *   <li><b>system</b> — system instruction; OpenAI puts it in messages, Claude hoists it to a
+ *       top-level system field (handled by ClaudeAdapter)</li>
+ *   <li><b>user</b> — user input</li>
+ *   <li><b>assistant</b> — model reply, possibly carrying {@link #toolCalls} (tool invocations initiated by the model)</li>
+ *   <li><b>tool</b> — tool execution result backfill, linked back to that ToolCall via {@link #toolCallId}</li>
  * </ul>
  *
  * @author geyan
@@ -35,42 +37,43 @@ import java.util.Map;
 public class ChatMessage {
 
     /**
-     * 角色：system / user / assistant / tool
+     * Role: system / user / assistant / tool
      */
     private String role;
 
     /**
-     * 内容。OpenAI 里既可能是纯字符串 "hello"，也可能是多模态数组
-     * {@code [{type:text,text:...},{type:image_url,image_url:{url:...}}]}
-     * 先用 Object 透传保留原结构；多模态等真做再强类型化
+     * Content. In OpenAI it can be either a plain string "hello" or a multimodal array
+     * {@code [{type:text,text:...},{type:image_url,image_url:{url:...}}]}.
+     * Passed through as Object for now to preserve the original structure; strongly type it
+     * once multimodal is actually implemented.
      */
     private Object content;
 
     /**
-     * 可选，参与者名（OpenAI 用于区分同名 role，较少见）
+     * Optional, participant name (OpenAI uses it to distinguish same-name roles; rare)
      */
     private String name;
 
     /**
-     * 工具【调用】列表，只在 role=assistant 的消息里出现。
-     * 模型决策调用工具时在这里返回 ToolCall（含 id + name + arguments 实参）。
-     * {@link JsonInclude#NON_NULL} 避免非 assistant 消息序列化出空的 tool_calls 字段。
+     * Tool [call] list, only present in role=assistant messages.
+     * When the model decides to invoke a tool it returns a ToolCall here (with id + name + argument values).
+     * {@link JsonInclude#NON_NULL} prevents serializing an empty tool_calls field on non-assistant messages.
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private List<ToolCall> toolCalls;
 
     /**
-     * tool 角色消息专用：关联回对应 ToolCall 的 id（模型靠它把工具结果接回对话）
+     * For tool-role messages only: links back to the id of the corresponding ToolCall (the model uses it to attach the tool result back to the conversation)
      */
     private String toolCallId;
 
     /**
-     * 拒绝内容（OpenAI 较新字段，模型拒绝执行时填充）
+     * Refusal content (a newer OpenAI field, filled when the model refuses to execute)
      */
     private String refusal;
 
     /**
-     * 扩展字段透传，语义同 {@link ChatRequest#extra}
+     * Extension field pass-through, same semantics as {@link ChatRequest#extra}
      */
     private Map<String, Object> extra = new LinkedHashMap<>();
 

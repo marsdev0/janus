@@ -61,7 +61,7 @@ public class UpstreamProxy {
             };
 
     /**
-     * 非流式转发 + 计量（对标流式 relayStreamWithMetering）
+     * Non-stream forwarding + metering (mirror of the streaming relayStreamWithMetering)
      */
     public Mono<String> relayNonStreamWithMetering(RequestContext ctx) {
         ChatRequest canonical = JsonUtils.fromJson(ctx.getRawBody(), ChatRequest.class);
@@ -72,9 +72,9 @@ public class UpstreamProxy {
                 .flatMap(resp -> {
                     Long channelId = channelIdRef.get() >= 0 ? channelIdRef.get() : null;
                     ProviderAdapter a = hitAdapter.get();
-                    Usage u = a.parseUsage(resp);                    // 用原始响应解析 usage（上游格式）
+                    Usage u = a.parseUsage(resp);                    // parse usage from the raw response (upstream format)
                     return meteringFilter.settle(ctx, u, channelId)
-                            .thenReturn(a.fromUpstreamResp(resp));   // 返回归一化后的响应（OpenAI 格式）给客户端
+                            .thenReturn(a.fromUpstreamResp(resp));   // return the normalized response (OpenAI format) to the client
                 });
     }
 
@@ -84,7 +84,7 @@ public class UpstreamProxy {
             return Mono.error(new JanusException(ErrorCode.ALL_CHANNELS_FAILED));
         }
         Channel ch = candidates.get(idx);
-        ProviderAdapter adapter = adapterFactory.get(ch.getProtocol());   // ③ 每个渠道按自己协议取 adapter
+        ProviderAdapter adapter = adapterFactory.get(ch.getProtocol());   // ③ each channel picks its adapter by its own protocol
         // Circuit breaker dedicated to the current channel
         CircuitBreaker cb = cbRegistry.circuitBreaker("channel-" + ch.getId());
         return doRequestNonStream(ch, adapter.toUpstreamReq(canonical), adapter)
@@ -134,7 +134,7 @@ public class UpstreamProxy {
 
         return failoverStream(canonical, router.route(ctx.getModel()), 0, firstByte, channelIdRef, hitAdapter)
                 .doOnNext(sse -> {
-                    // Accumulate usage / completion（用原始 chunk 解析，上游格式）
+                    // Accumulate usage / completion (parsed from the raw chunk, upstream format)
                     ProviderAdapter adapter = hitAdapter.get();
                     Usage u = adapter.parseUsage(sse.data());
                     if (u != null) {
@@ -147,7 +147,7 @@ public class UpstreamProxy {
                 })
                 .map(sse -> ServerSentEvent.<String>builder()
                         .id(sse.id()).event(sse.event()).comment(sse.comment())
-                        .data(hitAdapter.get().normalizeStreamChunk(sse.data()))   // 转发归一化后的 chunk（OpenAI 格式）
+                        .data(hitAdapter.get().normalizeStreamChunk(sse.data()))   // forward the normalized chunk (OpenAI format)
                         .build())
                 .concatWith(Mono.defer(() -> {
                     // Stream ended → settle (exactly once)
@@ -177,7 +177,7 @@ public class UpstreamProxy {
                 })
                 .onErrorResume(e -> {
                     if (firstByte.get()) {
-                        // 首字节后出错：不能 failover（会重复输出），发一个错误 event 给客户端再结束
+                        // Error after first byte: cannot failover (would duplicate output); emit an error event to the client then end
                         ServerSentEvent<String> err = ServerSentEvent.<String>builder()
                                 .data("{\"error\":{\"message\":\"upstream stream interrupted\"}}").build();
                         return Flux.just(err);

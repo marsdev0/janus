@@ -10,8 +10,8 @@ package com.marsdev.janus.reply.adapter.model;
 import lombok.Data;
 
 /**
- * 工具调用的细节（{@link ToolCall#getFunction()}）。是「调用」：函数名 + 实参值
- * 与 {@link FunctionDef}（定义）相对
+ * Details of a tool call ({@link ToolCall#getFunction()}). It is a "call": function name + argument values.
+ * Counterpart of {@link FunctionDef} (definition).
  *
  * @author geyan
  * @date 2026/8/9
@@ -20,13 +20,14 @@ import lombok.Data;
 public class FunctionCall {
 
     /**
-     * 被调用的函数名（对应某个 {@link FunctionDef#getName()}）
+     * The invoked function name (corresponding to some {@link FunctionDef#getName()})
      */
     private String name;
 
     /**
-     * 实参，<b>是 JSON 字符串</b>（不是对象）。OpenAI 规范：arguments 序列化成字符串
-     * 如 {@code "{\"city\":\"Beijing\"}"}。客户端/adapter 拿到后需要再 parse 一次才能用
+     * Arguments, <b>as a JSON string</b> (not an object). Per the OpenAI spec, arguments are
+     * serialized into a string such as {@code "{\"city\":\"Beijing\"}"}. The client/adapter must
+     * parse it once more before using it.
      */
     private String arguments;
 }

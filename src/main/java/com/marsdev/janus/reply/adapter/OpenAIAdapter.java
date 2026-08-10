@@ -26,8 +26,8 @@ public class OpenAIAdapter implements ProviderAdapter {
     @Override
     public String toUpstreamReq(ChatRequest req) {
         if (req.isStream()) {
-            // 流式：注入 stream_options.include_usage，让上游在末 chunk 返回精确 usage
-            // （否则 upstreamUsage 永远 null，每次都走 completionBuf 本地估算）
+            // Streaming: inject stream_options.include_usage so the upstream returns accurate usage in the final chunk
+            // (otherwise upstreamUsage is always null and every request falls back to local completionBuf estimation)
             req.getExtra().put("stream_options", Map.of("include_usage", true));
         }
         return JsonUtils.toJson(req);
@@ -81,7 +81,7 @@ public class OpenAIAdapter implements ProviderAdapter {
 
     @Override
     public String fromUpstreamResp(String raw) {
-        // Canonical=OpenAI，上游响应本就是 OpenAI 格式 → 直通（Identity）
+        // Canonical=OpenAI, the upstream response is already in OpenAI format → pass-through (Identity)
         return raw;
     }
 }

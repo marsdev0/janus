@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2026 marsdev0
+ *
+ * Licensed under the MIT License.
+ * See the LICENSE file in the project root for full license information.
+ */
+
 package com.marsdev.janus.common.util;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -5,11 +12,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * 静态 JSON 工具，统一序列化 / 解析（适配器协议转换、Redis Key 缓存、usage chunk 解析等共用）。
+ * Static JSON utility for unified serialization / parsing (shared by adapter protocol
+ * conversion, Redis key caching, usage chunk parsing, etc.).
  *
- * <p>封装 Jackson {@link ObjectMapper} 为单例。关键配置：关闭
- * {@link DeserializationFeature#FAIL_ON_UNKNOWN_PROPERTIES}，反序列化时忽略未知字段——
- * 上游响应字段经常扩展/变动，忽略未知字段可提升兼容性，避免一个新字段打爆解析。
+ * <p>Wraps a Jackson {@link ObjectMapper} singleton. Key config: disable
+ * {@link DeserializationFeature#FAIL_ON_UNKNOWN_PROPERTIES} so unknown fields are ignored
+ * during deserialization — upstream response fields are frequently extended/changed, and
+ * ignoring unknown fields improves compatibility so a single new field won't break parsing.
  *
  * @author geyan
  * @date 2026/8/9
@@ -26,7 +35,7 @@ public final class JsonUtils {
         try {
             return MAPPER.writeValueAsString(o);
         } catch (Exception e) {
-            throw new RuntimeException("JSON 序列化失败", e);
+            throw new RuntimeException("JSON serialization failed", e);
         }
     }
 
@@ -34,7 +43,7 @@ public final class JsonUtils {
         try {
             return MAPPER.readValue(json, clazz);
         } catch (Exception e) {
-            throw new RuntimeException("JSON 解析失败: " + json, e);
+            throw new RuntimeException("JSON parse failed: " + json, e);
         }
     }
 

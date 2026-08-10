@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Canonical 请求模型 —— janus 内部统一的 chat 请求表示
+ * Canonical request model — janus's unified internal representation of a chat request.
  *
  * @author geyan
  * @date 2026/8/9
@@ -29,47 +29,51 @@ import java.util.Map;
 public class ChatRequest {
 
     /**
-     * 模型名；路由（ChannelRouter.route）和 adapter 转换都要用
+     * Model name; needed by both routing (ChannelRouter.route) and adapter conversion
      */
     private String model;
 
     /**
-     * 对话消息列表，role: system/user/assistant/tool；计量时要读 content 估算 token
+     * Conversation message list, role: system/user/assistant/tool;
+     * metering reads content to estimate tokens
      */
     private List<ChatMessage> messages;
 
 
     /**
-     * 工具【定义】列表（请求方向，告诉模型有哪些工具可用，见 {@link Tool}
+     * Tool [definition] list (request direction, tells the model which tools are available; see {@link Tool})
      */
     private List<Tool> tools;
 
     /**
-     * 是否流式；影响 adapter 是否注入 stream_options、以及走 SSE 路径
+     * Whether streaming; affects whether the adapter injects stream_options and whether the SSE path is taken
      */
     private boolean stream;
 
     /**
-     * 最大输出 token
+     * Maximum output tokens
      */
     private Integer maxTokens;
 
     /**
-     * 采样温度，0~2，越高越随机
+     * Sampling temperature, 0~2; the higher the more random
      */
     private Double temperature;
 
     /**
-     * 非核心/未知字段兜底透传。
-     * <p>反序列化时 Jackson 把 Canonical 不认识的字段塞进来（{@link JsonAnySetter}），
-     * 序列化时合并回顶层（{@link JsonAnyGetter}）。这样 OpenAI 新增字段无需改 Canonical 即可透传（§2.5）。
-     * <p>LinkedHashMap 保持插入顺序，保证序列化后字段顺序稳定（便于排查/测试）。
+     * Fallback pass-through for non-core / unknown fields.
+     * <p>On deserialization Jackson puts any fields the Canonical doesn't recognize in here
+     * ({@link JsonAnySetter}), and merges them back to the top level on serialization
+     * ({@link JsonAnyGetter}). This way new OpenAI fields can pass through without changing
+     * the Canonical (§2.5).
+     * <p>LinkedHashMap preserves insertion order so the serialized field order stays stable
+     * (easier to inspect/test).
      */
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private Map<String, Object> extra = new LinkedHashMap<>();
 
     /**
-     * Jackson 反序列化钩子：遇到未声明的字段 → 存进 extra，而不是报错或丢弃
+     * Jackson deserialization hook: an undeclared field → stored in extra, instead of erroring or being dropped
      */
     @JsonAnySetter
     public void addExtra(String key, Object value) {
@@ -77,7 +81,7 @@ public class ChatRequest {
     }
 
     /**
-     * Jackson 序列化钩子：把 extra 的 entry 作为顶层字段输出（与核心字段合并成完整请求体）
+     * Jackson serialization hook: emits extra entries as top-level fields (merged with the core fields into the full request body)
      */
     @JsonAnyGetter
     public Map<String, Object> getExtra() {

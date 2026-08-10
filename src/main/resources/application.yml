@@ -17,15 +17,15 @@ spring:
   kafka:
     bootstrap-servers: localhost:9092
     producer:
-      acks: all  # 持久化保证
+      acks: all  # durability guarantee
       retries: 3
     consumer:
       group-id: janus-audit-writer
-      enable-auto-commit: false  # 手动 ack
-      max-poll-records: 100  # 批量大小
+      enable-auto-commit: false  # manual ack
+      max-poll-records: 100  # batch size
     listener:
-      type: batch        # 批量消费（配合 List<ConsumerRecord> 参数）
-      ack-mode: manual   # 手动提交（配合 Acknowledgment 参数；否则 checkAckArg 抛异常）
+      type: batch        # batch consume (pairs with List<ConsumerRecord> param)
+      ack-mode: manual   # manual commit (pairs with Acknowledgment param; otherwise checkAckArg throws)
 
 mybatis-plus:
   configuration:

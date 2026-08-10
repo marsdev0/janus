@@ -13,15 +13,18 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 /**
- * Adapter 工厂（§4.4）。按渠道的 <b>protocol</b>（openai/claude/gemini）选 adapter。
+ * Adapter factory (§4.4). Selects an adapter by the channel's <b>protocol</b>
+ * (openai/claude/gemini).
  *
- * <p>注意 protocol ≠ provider：provider 是商业身份（智谱/通义/ollama…），值很多；
- * protocol 是协议类型，值就 3 个。多个 provider 共用一个 protocol（智谱/ollama 都走 openai 协议），
- * 所以这里按 protocol 而非 provider 取 adapter。
+ * <p>Note: protocol ≠ provider. provider is the commercial identity (Zhipu/Tongyi/ollama…)
+ * with many possible values; protocol is the protocol type with only 3 values. Multiple
+ * providers share one protocol (Zhipu/ollama both use the openai protocol), so adapters are
+ * looked up by protocol rather than by provider.
  *
- * <p>实现技巧：Spring 会把所有 {@link ProviderAdapter} Bean 按 <b>bean 名</b>注入 {@code Map<String, ProviderAdapter>}，
- * key 是 bean 名（如 "openaiAdapter"）。所以新增协议只要加一个 {@code @Component("xxxAdapter")}，
- * 这里零改动自动收集 —— 开闭原则的落地。
+ * <p>Implementation trick: Spring injects all {@link ProviderAdapter} beans by <b>bean name</b>
+ * into a {@code Map<String, ProviderAdapter>}, where the key is the bean name (e.g. "openaiAdapter").
+ * So adding a new protocol only requires a new {@code @Component("xxxAdapter")} — this class
+ * collects them automatically with zero changes, which is how the open-closed principle is realized.
  *
  * @author geyan
  * @date 2026/8/9
@@ -31,17 +34,19 @@ import java.util.Map;
 public class ProviderAdapterFactory {
 
     /**
-     * Spring 自动注入：key = bean 名（openaiAdapter/claudeAdapter/geminiAdapter），value = 对应实例
+     * Auto-injected by Spring: key = bean name (openaiAdapter/claudeAdapter/geminiAdapter),
+     * value = the corresponding instance
      */
     private final Map<String, ProviderAdapter> adapters;
 
 
     /**
-     * 按 protocol 取 adapter。
+     * Get the adapter by protocol.
      *
-     * @param protocol 渠道协议：openai / claude / gemini（来自 {@code Channel.protocol}）
-     * @return 对应的 ProviderAdapter
-     * @throws IllegalArgumentException protocol 不支持（说明 channel 表配了未实现的协议）
+     * @param protocol channel protocol: openai / claude / gemini (from {@code Channel.protocol})
+     * @return the corresponding ProviderAdapter
+     * @throws IllegalArgumentException when the protocol is unsupported (means the channel table
+     *                                  was configured with an unimplemented protocol)
      */
     public ProviderAdapter get(String protocol) {
         ProviderAdapter a = adapters.get(protocol + "Adapter");   // openai→openaiAdapter, claude→claudeAdapter...

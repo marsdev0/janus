@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2026 marsdev0
+ *
+ * Licensed under the MIT License.
+ * See the LICENSE file in the project root for full license information.
+ */
+
 package com.marsdev.janus.audit;
 
 import com.marsdev.janus.common.util.JsonUtils;
@@ -34,13 +41,14 @@ public class AuditConsumer {
             list.add(auditConverter.toUsageLog(auditEvent));
         }
         try {
-            // insert(list)是伪批量插入
-            // 批量插入
+            // insert(list) is a fake batch insert
+            // batch insert
             usageLogMapper.insertBatch(list);
             ack.acknowledge();
         } catch (Exception e) {
-            // 当上述批处理插入时，存在requestId重复，就会导致这批都插入失败，影响很大
-            // 所以下面必须有兜底的处理
+            // If the batch insert above hits a duplicate requestId, the whole batch fails,
+            // which has a big impact.
+            // So a fallback is mandatory below.
             log.warn("batch insert failed, fallback to one-by-one", e);
             for (UsageLog u : list) {
                 try {

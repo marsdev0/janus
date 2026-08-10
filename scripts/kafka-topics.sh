@@ -21,7 +21,7 @@ fi
 
 echo "Creating Kafka topics..."
 
-# janus-audit: 审计事件流 — AuditProducer 写入，AuditConsumer 批量落 usage_log
+# janus-audit: audit event stream — written by AuditProducer, batch-inserted into usage_log by AuditConsumer
 docker exec "$KAFKA_CONTAINER" kafka-topics --create \
       --if-not-exists \
       --bootstrap-server "$BOOTSTRAP" \

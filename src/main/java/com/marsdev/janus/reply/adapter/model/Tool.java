@@ -13,12 +13,15 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.Data;
 
 /**
- * 工具【定义】 —— <b>请求方向</b>。出现在 {@link ChatRequest#getTools()} 里，告诉模型「有哪些工具可用」。
+ * Tool [definition] — <b>request direction</b>. Appears in {@link ChatRequest#getTools()},
+ * telling the model "which tools are available".
  *
- * <p>类比：菜单上列出的菜。只声明 schema（叫什么、参数结构），不包含具体调用。
- * <p>OpenAI 形态：{@code {type:"function", function:{name, description, parameters}}}
+ * <p>Analogy: the dishes listed on a menu. It only declares a schema (name, parameter structure)
+ * and does not include any concrete invocation.
+ * <p>OpenAI shape: {@code {type:"function", function:{name, description, parameters}}}
  *
- * <p>与 {@link ToolCall}（工具调用，响应方向）相对：Tool 是「能力清单」，ToolCall 是「一次行使」。
+ * <p>Counterpart of {@link ToolCall} (tool invocation, response direction): Tool is the
+ * "capability list", ToolCall is "one exercise of it".
  *
  * @author geyan
  * @date 2026/8/9
@@ -28,12 +31,12 @@ import lombok.Data;
 public class Tool {
 
     /**
-     * 类型，目前 OpenAI 仅有 "function"
+     * Type; currently only OpenAI's "function"
      */
     private String type = "function";
 
     /**
-     * 工具的具体定义（名字 / 描述 / 参数 schema）
+     * The concrete definition of the tool (name / description / parameter schema)
      */
     private FunctionDef function;
 }
