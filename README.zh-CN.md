@@ -76,7 +76,7 @@ Client (OpenAI 兼容)
 
 - JDK 21、Docker
 
-### 1. 启动 MySQL + Redis
+### 1. 启动 MySQL + Redis + Kafka
 
 ```bash
 export DATA_DIR="$HOME/.janus-data"   # 持久化数据的挂载目录
@@ -177,14 +177,14 @@ Janus 无状态（状态全在 MySQL/Redis），可在 LB 后水平扩容。IP �
 | 1 | ✅ 已完成 | 多渠道路由 + 故障转移 + 断路器 |
 | 2 | ✅ 已完成 | API Key + 配额计费（Redis Lua 一致性、崩溃恢复） |
 | 3 | ✅ 已完成 | 多级限流（滑动窗口） |
-| 4 | 🔜 计划中 | Kafka 用量审计（把高频写从主链路剥离） |
-| 5 | 🔜 计划中 | 多厂商 Adapter（Claude/Gemini）+ 管理后台 |
+| 4 | ✅ 已完成 | Kafka 用量审计（异步，把高频写从主链路剥离） |
+| 5 | 🔜 计划中 | Claude/Gemini 厂商 Adapter + 管理后台（适配层骨架已就位） |
 
 ---
 
 ## 技术栈
 
-Java 21 · Spring Boot 3.5（WebFlux）· MyBatis-Plus · MySQL 8 · Redis 7（Lettuce + Lua）· Resilience4j · jtokkit · Maven
+Java 21 · Spring Boot 3.5（WebFlux）· MyBatis-Plus · MySQL 8 · Redis 7（Lettuce + Lua）· Kafka · Resilience4j · jtokkit · Maven
 
 ---
 
@@ -196,9 +196,11 @@ src/main/java/com/marsdev/janus/
 ├── filter/         AuthFilter、RateLimitFilter、QuotaPreCheckFilter、MeteringFilter
 ├── channel/        ChannelRouter（加权路由 + 断路器）
 ├── reply/          UpstreamProxy（SSE + 故障转移）、UsageParser
+│   └── adapter/    ProviderAdapter（多协议）、OpenAIAdapter、Canonical 模型
+├── audit/          AuditProducer / AuditConsumer（Kafka 异步审计管线）
 ├── quota/          QuotaService（Lua）、Bootstrap、RecoverJob、ReconcileJob、估算器
 ├── ratelimit/      RateLimitService（滑动窗口）
-├── entity / mapper / model / common
+├── entity / mapper / model / common / converter
 src/main/resources/
 ├── application.yml
 └── lua/            quota_pre_consume.lua、quota_adjust.lua、ratelimit.lua

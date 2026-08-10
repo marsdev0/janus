@@ -76,7 +76,7 @@ Background jobs: `QuotaBootstrap` (warmup/rebuild Redis from MySQL), `QuotaRecov
 
 - JDK 21, Docker
 
-### 1. Start MySQL + Redis
+### 1. Start MySQL + Redis + Kafka
 
 ```bash
 export DATA_DIR="$HOME/.janus-data"   # mounted volume for persistent data
@@ -177,14 +177,14 @@ Janus is stateless (all state in MySQL/Redis), so it scales horizontally behind 
 | 1 | ✅ Done | Multi-channel routing + failover + circuit breaker |
 | 2 | ✅ Done | API key + quota billing (Redis-Lua consistency, crash recovery) |
 | 3 | ✅ Done | Multi-level rate limiting (sliding window) |
-| 4 | 🔜 Planned | Usage audit via Kafka (decouple high-frequency writes from the hot path) |
-| 5 | 🔜 Planned | Multi-provider adapters (Claude/Gemini) + admin console |
+| 4 | ✅ Done | Usage audit via Kafka (async, decouples high-frequency writes from the hot path) |
+| 5 | 🔜 Planned | Claude/Gemini provider adapters + admin console (adapter layer scaffolded) |
 
 ---
 
 ## Tech Stack
 
-Java 21 · Spring Boot 3.5 (WebFlux) · MyBatis-Plus · MySQL 8 · Redis 7 (Lettuce + Lua) · Resilience4j · jtokkit · Maven
+Java 21 · Spring Boot 3.5 (WebFlux) · MyBatis-Plus · MySQL 8 · Redis 7 (Lettuce + Lua) · Kafka · Resilience4j · jtokkit · Maven
 
 ---
 
@@ -196,9 +196,11 @@ src/main/java/com/marsdev/janus/
 ├── filter/         AuthFilter, RateLimitFilter, QuotaPreCheckFilter, MeteringFilter
 ├── channel/        ChannelRouter (weighted routing + circuit breaker)
 ├── reply/          UpstreamProxy (SSE + failover), UsageParser
+│   └── adapter/    ProviderAdapter (multi-protocol), OpenAIAdapter, Canonical models
+├── audit/          AuditProducer / AuditConsumer (Kafka async audit pipeline)
 ├── quota/          QuotaService (Lua), Bootstrap, RecoverJob, ReconcileJob, estimator
 ├── ratelimit/      RateLimitService (sliding window)
-├── entity / mapper / model / common
+├── entity / mapper / model / common / converter
 src/main/resources/
 ├── application.yml
 └── lua/            quota_pre_consume.lua, quota_adjust.lua, ratelimit.lua
